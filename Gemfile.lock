@@ -1,5 +1,7 @@
-PATH
-  remote: ../fog
+GIT
+  remote: git@github.com:stiller/fog.git
+  revision: 017ce23a256baad9ba8870509c0740e59e75823b
+  branch: path_style
   specs:
     fog (1.10.0)
       builder
