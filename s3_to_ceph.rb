@@ -53,7 +53,7 @@ module S3Backup
     :provider => 'AWS',
     :aws_access_key_id => STOR_CONF['AWS_ACCESS_KEY_ID'],
     :aws_secret_access_key => STOR_CONF['AWS_SECRET_ACCESS_KEY'],
-    :region => 'us-east-1',
+    :region => 'eu-west-1',
     :path_style => true
   })
 
@@ -65,9 +65,9 @@ module S3Backup
     :path_style => true
   })
 
-  @target_dir = ceph.directories.get('images.us.viewbook.net')
+  @target_dir = ceph.directories.get('images.eu.viewbook.com')
 
-  files = s3.directories.get('images.us.viewbook.net').files
+  files = s3.directories.get('images.eu.viewbook.com').files
 
 
   subset = files.all
