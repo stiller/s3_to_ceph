@@ -35,7 +35,7 @@ OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 module S3Backup
 
-  logger = Logger.new('backup.log', 'daily')
+  @logger = Logger.new('backup.log', 'daily')
   STOR_CONF = {}
 
   confpath = ["#{ENV['S3CONF']}", Dir.home, "/etc/s3conf"]
@@ -65,16 +65,33 @@ module S3Backup
     :path_style => true
   })
 
-  target_dir = ceph.directories.get('images.us.viewbook.net')
+  @target_dir = ceph.directories.get('images.us.viewbook.net')
 
   files = s3.directories.get('images.us.viewbook.net').files
-  Parallel.each(files.all, :in_threads => 5) do |s3_file|
-    unless target_dir.files.head(s3_file.key)
-      logger.info(s3_file.key)
-      tempfile = Tempfile.new(s3_file.key)
-      tempfile.write(s3_file.body)
-      target_dir.files.create(:key => s3_file.key, :body => tempfile )
-      tempfile.unlink
+
+
+  subset = files.all
+  subset.each_file_this_page
+  @counter = 0
+
+  def S3Backup.parallel_copy files
+    Parallel.each(files, :in_threads => 128) do |s3_file|
+      unless @target_dir.files.head(s3_file.key)
+        @logger.info(s3_file.key)
+        tempfile = Tempfile.new(s3_file.key)
+        tempfile.write(s3_file.body)
+        @target_dir.files.create(:key => s3_file.key, :body => tempfile )
+        tempfile.unlink
+      end
+      @counter += 1
     end
   end
+
+  parallel_copy subset
+  while subset.is_truncated
+    subset = subset.all(:marker => subset.last.key)
+    parallel_copy subset
+  end
+  puts "Number of objects copied: #{@counter}"
+
 end
