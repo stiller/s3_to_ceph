@@ -70,7 +70,7 @@ module S3Backup
   files = s3.directories.get('images.eu.viewbook.com').files
 
 
-  subset = files.all
+  subset = files.all(:marker => '00442e272a35aab5bfa0e1a635390730_large.jpg')
   subset.each_file_this_page
   @counter = 0
 
