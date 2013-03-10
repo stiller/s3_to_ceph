@@ -79,7 +79,17 @@ module S3Backup
       unless @target_dir.files.head(s3_file.key)
         @logger.info(s3_file.key)
         tempfile = Tempfile.new(s3_file.key)
-        tempfile.write(s3_file.body)
+        tries = 0
+        begin
+          tempfile.write(s3_file.body)
+        rescue SocketError
+          tries += 1
+          if tries < 3
+            retry
+          else
+            @logger.error("Socket error")
+          end
+        end
         @target_dir.files.create(:key => s3_file.key, :body => tempfile )
         tempfile.unlink
       end
