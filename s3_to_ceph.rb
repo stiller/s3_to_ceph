@@ -70,7 +70,7 @@ module S3Backup
   files = s3.directories.get('images.eu.viewbook.com').files
 
 
-  subset = files.all(:marker => '00aa65c354432cf849c733d7fecce044.jpg')
+  subset = files.all(:marker => '02ed9916fbeb1fd6f8661c0646a6aee5_small.jpg')
   subset.each_file_this_page
   @counter = 0
 
@@ -83,9 +83,10 @@ module S3Backup
         tries = 0
         begin
           @target_dir.files.create(:key => s3_file.key, :body => tempfile )
-        rescue SocketError
+        rescue 
           tries += 1
           if tries < 3
+	    sleep 1
             retry
           else
             @logger.error("Socket error")
