@@ -59,24 +59,26 @@ module S3Backup
 
   ceph = Fog::Storage.new({
     :provider => 'AWS',
-    :host       => 'ceph.webminded.nl',
+    :host       => 'radosgw.webminded.nl',
     :aws_access_key_id     => STOR_CONF['CEPH_ACCESS_KEY_ID'],
     :aws_secret_access_key => STOR_CONF['CEPH_SECRET_ACCESS_KEY'],
-    :path_style => true
+    :path_style => true,
+    :scheme => 'http',
+    :port => 80
   })
 
   @target_dir = ceph.directories.get('images.eu.viewbook.com')
-
   files = s3.directories.get('images.eu.viewbook.com').files
 
 
-  subset = files.all(:marker => '02ed9916fbeb1fd6f8661c0646a6aee5_small.jpg')
+  subset = files.all(:marker => '253b8fd1d725cb7873423eb4f832b417.jpg')
+
   subset.each_file_this_page
   @counter = 0
 
   def S3Backup.parallel_copy files
     Parallel.each(files, :in_threads => 128) do |s3_file|
-      unless @target_dir.files.head(s3_file.key)
+      #unless try_this(3, "Ceph HEAD error") { @target_dir.files.head(s3_file.key) }
         @logger.info(s3_file.key)
         tempfile = Tempfile.new(s3_file.key)
         try_this(3, "S3 error") do
@@ -86,8 +88,8 @@ module S3Backup
           @target_dir.files.create(:key => s3_file.key, :body => tempfile )
         end
         tempfile.unlink
-      end
-      @counter += 1
+      #end
+      #@counter += 1
     end
   end
 
