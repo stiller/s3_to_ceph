@@ -71,7 +71,7 @@ module S3Backup
   files = s3.directories.get('images.eu.viewbook.com').files
 
 
-  subset = files.all(:marker => '253b8fd1d725cb7873423eb4f832b417.jpg')
+  subset = files.all(:marker => '2b52013b9ec4d5890634d5fd87eb124c_large_mobile.jpg')
   subset.each_file_this_page
 
   def S3Backup.parallel_copy files
@@ -83,8 +83,9 @@ module S3Backup
           tempfile.write(s3_file.body)
         end
         try_this(3, "Ceph error") do
-          @target_dir.files.create(:key => s3_file.key, :body => tempfile )
+          @target_dir.files.create(:key => s3_file.key, :body => tempfile, :public => true )
         end
+      tempfile.unlink
       #end
     end
   end
@@ -100,8 +101,6 @@ module S3Backup
       else
         @logger.error(error)
       end
-    ensure
-      tempfile.unlink
     end
   end
 
