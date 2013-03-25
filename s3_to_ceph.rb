@@ -72,9 +72,7 @@ module S3Backup
 
 
   subset = files.all(:marker => '253b8fd1d725cb7873423eb4f832b417.jpg')
-
   subset.each_file_this_page
-  @counter = 0
 
   def S3Backup.parallel_copy files
     Parallel.each(files, :in_threads => 128) do |s3_file|
@@ -87,9 +85,7 @@ module S3Backup
         try_this(3, "Ceph error") do
           @target_dir.files.create(:key => s3_file.key, :body => tempfile )
         end
-        tempfile.unlink
       #end
-      #@counter += 1
     end
   end
 
@@ -104,6 +100,8 @@ module S3Backup
       else
         @logger.error(error)
       end
+    ensure
+      tempfile.unlink
     end
   end
 
@@ -112,6 +110,5 @@ module S3Backup
     subset = subset.all(:marker => subset.last.key)
     parallel_copy subset
   end
-  puts "Number of objects copied: #{@counter}"
 
 end
