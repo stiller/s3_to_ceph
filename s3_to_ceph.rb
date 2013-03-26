@@ -71,7 +71,7 @@ module S3Backup
   files = s3.directories.get('images.eu.viewbook.com').files
 
 
-  subset = files.all(:marker => '2b52013b9ec4d5890634d5fd87eb124c_large_mobile.jpg')
+  subset = files.all(:marker => '398129e09d7ed7c5004661e7da9aff58.jpg')
   subset.each_file_this_page
 
   def S3Backup.parallel_copy files
