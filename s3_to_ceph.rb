@@ -35,7 +35,7 @@ OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 module S3Backup
 
-  @logger = Logger.new('backup.log', 'daily')
+  mylogger = Logger.new('backup.log', 'daily')
   STOR_CONF = {}
 
   confpath = ["#{ENV['S3CONF']}", Dir.home, "/etc/s3conf"]
@@ -67,24 +67,24 @@ module S3Backup
     :port => 80
   })
 
-  @target_dir = ceph.directories.get('images.eu.viewbook.com')
+  ceph_dir = ceph.directories.get('images.eu.viewbook.com')
   files = s3.directories.get('images.eu.viewbook.com').files
 
 
   subset = files.all(:marker => '2b52013b9ec4d5890634d5fd87eb124c_large_mobile.jpg')
   subset.each_file_this_page
 
-  def S3Backup.parallel_copy files
+  def S3Backup.parallel_copy files, target_dir, logger
     Parallel.each(files, :in_threads => 128) do |s3_file|
       #unless try_this(3, "Ceph HEAD error") { @target_dir.files.head(s3_file.key) }
-        @logger.info(s3_file.key)
-        tempfile = Tempfile.new(s3_file.key)
-        try_this(3, "S3 error") do
-          tempfile.write(s3_file.body)
-        end
-        try_this(3, "Ceph error") do
-          @target_dir.files.create(:key => s3_file.key, :body => tempfile, :public => true )
-        end
+      logger.info(s3_file.key)
+      tempfile = Tempfile.new(s3_file.key)
+      try_this(3, "S3 error") do
+        tempfile.write(s3_file.body)
+      end
+      try_this(3, "Ceph error") do
+        target_dir.files.create(:key => s3_file.key, :body => tempfile, :public => true )
+      end
       tempfile.unlink
       #end
     end
@@ -96,18 +96,18 @@ module S3Backup
     rescue
       tries += 1
       if tries < 3
-        sleep 1
+        sleep 3
         retry
       else
-        @logger.error(error)
+        $stderr.puts(error)
       end
     end
   end
 
-  parallel_copy subset
+  parallel_copy subset, ceph_dir, mylogger
   while subset.is_truncated
     subset = subset.all(:marker => subset.last.key)
-    parallel_copy subset
+    parallel_copy subset, ceph_dir, mylogger
   end
 
 end
