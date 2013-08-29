@@ -81,7 +81,7 @@ module S3Backup
     :provider => 'AWS',
     :aws_access_key_id => STOR_CONF['AWS_ACCESS_KEY_ID'],
     :aws_secret_access_key => STOR_CONF['AWS_SECRET_ACCESS_KEY'],
-    :region => 'eu-west-1',
+    :region => 'us-east-1',
     :path_style => true
   })
 
@@ -95,16 +95,16 @@ module S3Backup
     :port => 80
   })
 
-  ceph_dir = ceph.directories.get('images.eu.viewbook.com')
-  files = s3.directories.get('images.eu.viewbook.com').files
+  ceph_dir = ceph.directories.get('images.us.viewbook.com')
+  files = s3.directories.get('images.us.viewbook.com').files
 
-  subset = files.all(:marker => 'fffffeacf7afed9b3de61fd3a01776f7.jpg')
+  subset = files.all(:marker => 'ffffd411a157416d426a6562c9a797aa.jpg')
 
   def S3Backup.parallel_copy files, target_dir, logger
-    Parallel.each(files, :in_threads => 12) do |s3_file|
+    Parallel.each(files, :in_threads => 32) do |s3_file|
     next if s3_file.key.include?('/') # can't handle slashes in filenames yet
     begin
-    Timeout.timeout(60) do
+    Timeout.timeout(120) do
       logger.info(s3_file.key)
       tempfile = Tempfile.new(s3_file.key)
       try_this(3, "S3") do
@@ -143,5 +143,6 @@ module S3Backup
     subset = subset.all(:marker => subset.last.key)
     parallel_copy subset, ceph_dir, mylogger
   end
+  mylogger.info("Done.")
 
 end
